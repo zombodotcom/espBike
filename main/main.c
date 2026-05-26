@@ -324,6 +324,15 @@ static void decode_km5s(const uint8_t *f, size_t n) {
     push_common(period_ms_to_mph_x100(period), cur_ma, soc, f[8]);
 }
 
+/* Error byte values (forwarded raw on char 0xEB09), per APT 500S datasheet §9:
+ *   0x01 normal        0x09 motor phase error    0x13 battery temp sensor err
+ *   0x03 brake signal  0x10 controller over-temp 0x14 motor temp sensor err
+ *   0x04 throttle high 0x11 motor over-temp      0x21 speed sensor err
+ *   0x06 low-volt prot 0x12 current sensor err   0x22 BMS comm err
+ *   0x07 high-volt prot                          0x30 communication error
+ *   0x08 motor hall err
+ * We forward the raw byte; the phone app maps it to text. */
+
 /* ---------- frame parser ----------
  * Always emit the raw frame first (this is how we confirm format on the phone),
  * then dispatch on the header byte. Unknown headers fall through with raw forwarded. */

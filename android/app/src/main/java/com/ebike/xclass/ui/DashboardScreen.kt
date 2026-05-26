@@ -56,8 +56,8 @@ fun DashboardScreen(onPair: () -> Unit) {
             Stat(if (s.brake) "ON" else "off", "brake")
         }
 
-        if (s.errorCode != 0) {
-            Text("Error code: ${s.errorCode}", color = MaterialTheme.colorScheme.error)
+        errorText(s.errorCode)?.let { msg ->
+            Text(msg, color = MaterialTheme.colorScheme.error)
         }
 
         // Protocol bring-up aid: show the most recent raw frame.
@@ -69,6 +69,25 @@ fun DashboardScreen(onPair: () -> Unit) {
 
         Button(onClick = onPair) { Text("Pair bike") }
     }
+}
+
+/** Map the controller's error byte to text (APT 500S datasheet §9); null = no fault. */
+private fun errorText(code: Int): String? = when (code) {
+    0x00, 0x01, 0x03 -> null                    // normal / brake — not faults
+    0x04 -> "Throttle stuck high"
+    0x06 -> "Low-voltage protection"
+    0x07 -> "High-voltage protection"
+    0x08 -> "Motor hall sensor error"
+    0x09 -> "Motor phase-line error"
+    0x10 -> "Controller over temperature"
+    0x11 -> "Motor over temperature"
+    0x12 -> "Current sensor error"
+    0x13 -> "Battery temp sensor error"
+    0x14 -> "Motor temp sensor error"
+    0x21 -> "Speed sensor error"
+    0x22 -> "BMS communication error"
+    0x30 -> "Communication error"
+    else -> "Error 0x%02X".format(code)
 }
 
 @Composable

@@ -69,12 +69,25 @@ espBike/
 
 ## Wiring (read-only passive sniff)
 
+Official APT 500S 5-pin connector, from the datasheet ([`docs/APT500s.pdf`](docs/APT500s.pdf) §11).
+Colors are the manufacturer spec — still meter your own loom, since OEMs sometimes rewire:
+
+| Pin | Color  | Function                                            |
+|----:|--------|-----------------------------------------------------|
+| 1   | Red    | Anode / battery+ (52 V — **keep off the ESP32**)    |
+| 2   | Blue   | Switched power to controller (KSI)                  |
+| 3   | Black  | GND                                                 |
+| 4   | Green  | **RxD — controller → display** ← tap this           |
+| 5   | Yellow | TxD — display → controller (PAS/throttle direction) |
+
+Tap the **Green** wire (controller→display telemetry) into GPIO16, sharing **Black** (GND):
+
 ```
-Controller TX  ──10kΩ──┬── GPIO16 (ESP32 UART2 RX)
-                       │
-                      20kΩ
-                       │
-Bike GND ──────────────┴──── ESP32 GND
+Controller→display (Green) ─10kΩ─┬── GPIO16 (ESP32 UART2 RX)
+                                 │
+                                20kΩ
+                                 │
+Bike GND (Black) ────────────────┴──── ESP32 GND
 ```
 
 The display UART data lines are commonly **~3.3 V logic** (Bafang-family lines were
@@ -139,6 +152,25 @@ Service `0000eb1c-0000-1000-8000-00805f9b34fb`. All READ + NOTIFY.
 
 The firmware advertises with a **stable public address** so the Android app can
 associate/filter on it (CompanionDeviceManager does not support random addresses).
+
+## Error codes
+
+Values for the error characteristic (`0xEB09`), from the display datasheet
+([`docs/APT500s.pdf`](docs/APT500s.pdf) §9). Shown as `nnH` on the display's speed digits.
+
+| Code | Meaning                       | Code | Meaning                      |
+|------|-------------------------------|------|------------------------------|
+| 0x01 | Normal                        | 0x11 | Motor over temperature       |
+| 0x03 | Brake signal (not an error)   | 0x12 | Current sensor error         |
+| 0x04 | Throttle stuck high           | 0x13 | Battery temp sensor error    |
+| 0x06 | Low-voltage protection        | 0x14 | Motor temp sensor error      |
+| 0x07 | High-voltage protection       | 0x21 | Speed sensor error           |
+| 0x08 | Motor hall sensor error       | 0x22 | BMS communication error      |
+| 0x09 | Motor phase-line error        | 0x30 | Communication error          |
+| 0x10 | Controller over temperature   |      |                              |
+
+`0x30` (the generic communication error referenced above) is what a mismatched Bafang
+display shows on this bike — confirming the controller doesn't speak Bafang UART.
 
 ## Phone-side dashboard (Android)
 
