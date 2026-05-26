@@ -4,6 +4,16 @@ ESP-IDF firmware that **passively sniffs** the controller→display UART line on
 Ariel Rider X-Class and rebroadcasts the telemetry as BLE GATT notifications, plus a
 native Android app that logs it in the background.
 
+> ⚠️ **Not yet hardware-verified.** Everything about the bike-side interface below —
+> the connector **pinout**, the protocol **dialect**, the **9600 baud** rate, the
+> decode **byte offsets**, the wire logic level, even whether a motor-temp sensor
+> exists — is *inferred* from the datasheet and community reverse-engineering. The
+> datasheet is for the generic 500S; this OEM unit and its loom may differ. **All of
+> it must be confirmed on the actual bike** once the hardware arrives — meter the
+> connector and sniff real frames (see [Protocol bring-up](#protocol-bring-up-do-this-before-trusting-decoded-values)).
+> What *is* verified: the firmware builds and boots in QEMU 9.2.2 and its decode math
+> is unit-tested; the Android app compiles to an APK. Nothing has touched a real bike.
+
 ## Bike-specific facts
 
 - Ariel Rider X-Class 52V (pre-2024), single Bafang 1000W rear hub motor
@@ -24,11 +34,12 @@ with this APT display is what drives the protocol choice below.
 
 ## Protocol — important
 
-The controller is a **Lishui** unit. Lishui controllers speak a **KM5S / KingMeter /
-Kunteng-style display protocol at 9600 baud**, *not* Bafang UART at 1200. (A Bafang
-600C display throws a `30H` comm error on the X-Class — proof the controller is not
-native Bafang. The APT 500S ships in OEM-specific firmware variants and Ariel spec'd
-the Lishui one.) The exact dialect is confirmed by the **first byte of each frame**:
+The controller is a **Lishui** unit, and Lishui controllers *typically* speak a
+**KM5S / KingMeter / Kunteng-style display protocol at 9600 baud**, not Bafang UART at
+1200. (Supporting evidence: a Bafang 600C display throws a `30H` comm error on the
+X-Class — i.e. the controller is not native Bafang — and the APT 500S ships in
+OEM-specific firmware variants.) This is the **working hypothesis, not confirmed** —
+the dialect should be revealed by the **first byte of each frame** once you sniff it:
 
 | First byte | Dialect            | Frame             |
 |-----------:|--------------------|-------------------|
@@ -69,8 +80,9 @@ espBike/
 
 ## Wiring (read-only passive sniff)
 
-Official APT 500S 5-pin connector, from the datasheet ([`docs/APT500s.pdf`](docs/APT500s.pdf) §11).
-Colors are the manufacturer spec — still meter your own loom, since OEMs sometimes rewire:
+APT 500S 5-pin connector from the *generic* datasheet ([`docs/APT500s.pdf`](docs/APT500s.pdf) §11).
+Treat this as a starting guess, **not confirmed for this bike** — meter every pin on
+your own loom before connecting anything, since OEM wiring can differ:
 
 | Pin | Color  | Function                                            |
 |----:|--------|-----------------------------------------------------|
