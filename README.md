@@ -12,6 +12,16 @@ native Android app that logs it in the background.
 - Controller: **Lishui LSW7765-99E** (52V, 33A peak, 16A rated, 41V LVC, 05/2022)
 - Display: **APT 500S-U**
 
+## Hardware labels
+
+| Controller | Display |
+|---|---|
+| ![Lishui LSW7765-99E controller label](docs/controller-label.jpg) | ![APT 500S-U display label, firmware V5.0](docs/display-label.jpg) |
+
+Controller (`lsdzs.com` = Lishui): **LSW7765-99E** — 52V, 33A max, 16A rated, 41V LVC,
+mfg 05/2022. Display: **APT 500S-U**, firmware **V5.0**. The Lishui controller paired
+with this APT display is what drives the protocol choice below.
+
 ## Protocol — important
 
 The controller is a **Lishui** unit. Lishui controllers speak a **KM5S / KingMeter /
@@ -47,11 +57,14 @@ error, brake, and motor temp**. It does **not** give:
 
 ```
 espBike/
-├── CMakeLists.txt          # top-level project
+├── CMakeLists.txt          # top-level ESP-IDF project
 ├── sdkconfig.defaults      # NimBLE on, Bluedroid off
-└── main/
-    ├── CMakeLists.txt
-    └── main.c
+├── main/
+│   ├── CMakeLists.txt
+│   └── main.c              # firmware: UART sniff + BLE GATT
+├── test/decode_test.c      # host unit test for the decode math (gcc)
+├── android/                # native Android app (see android/README.md)
+└── docs/                   # hardware label photos
 ```
 
 ## Wiring (read-only passive sniff)
@@ -147,4 +160,14 @@ The dashboard surfaces what we actually have: watts (approx), speed, **battery b
 Wh used / 1040 Wh**, current, motor temp, error; a live 60 s watts graph; and an
 end-of-ride summary. Voltage is shown as approximate/bars, not a precise number.
 
-App project lives under `android/` (scaffold to follow).
+The full app lives under [`android/`](android/) and compiles to a debug APK
+(`gradlew :app:assembleDebug`). See [android/README.md](android/README.md) for build
+and setup details.
+
+## Status
+
+- **Firmware** — builds under ESP-IDF v6.0.1 (`-Werror`), boots in QEMU 9.2.2, decode
+  math covered by host unit tests (`test/decode_test.c`).
+- **Android app** — compiles and packages to a debug APK (compileSdk 35, minSdk 33).
+- **Not yet done on real hardware** — confirm the protocol dialect by sniffing actual
+  frames (char `0xEB0A`), then verify on-device BLE pairing/connection.
