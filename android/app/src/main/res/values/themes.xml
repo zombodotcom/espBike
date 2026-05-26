@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base app theme; actual colors come from the Compose EbikeTheme. -->
+    <style name="Theme.EbikeXClass" parent="@android:style/Theme.Material.Light.NoActionBar" />
+</resources>

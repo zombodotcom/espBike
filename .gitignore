@@ -1,0 +1,27 @@
+# ---- ESP-IDF firmware ----
+/build/
+sdkconfig
+sdkconfig.old
+*.bin
+*.elf
+*.map
+
+# ---- Host unit test artifacts ----
+test/*.exe
+test/*.o
+
+# ---- Android / Gradle ----
+android/.gradle/
+android/build/
+android/app/build/
+android/captures/
+android/.idea/
+# machine-specific SDK path
+android/local.properties
+*.iml
+.kotlin/
+
+# ---- Editor / OS ----
+.vscode/
+.DS_Store
+Thumbs.db
