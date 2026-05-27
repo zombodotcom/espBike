@@ -121,8 +121,11 @@ the signal pin showing a **pulsing ~2.5 V average** is controller-TX. The other 
 pin (0 V with display unplugged) is display-TX.
 
 Power the ESP32 from USB during bench testing. For a permanent install use a buck
-converter rated for ≥60 V input (52 V pack peaks ~58 V) → 5 V into ESP32 5V.
+converter rated for ≥75 V input (52 V pack peaks ~58.8 V) → 5 V into ESP32 5V.
 **Never connect the bike's 52 V line directly to the ESP32.**
+
+See [`docs/WIRING.md`](docs/WIRING.md) for a full protoboard build (BOM, the
+5V-vs-3.3V divider decision, and bench / permanent diagrams).
 
 ## Build / flash / monitor
 
