@@ -60,6 +60,13 @@ int main(void) {
     CHECK_EQ("KT motor temp (f9-15)",  (kt[9] > 15) ? kt[9] - 15 : 0, 40);
     CHECK_EQ("KT soc byte f1",         kt[1], 0x0C);
 
+    /* No.2 / China S866 frame: [3]err [4]brake<<5 [6..7]current 0.1A be [8..9]period be */
+    uint8_t no2[14] = {0x02,0,0,0x06,0x20,0, 0x01,0x4A, 0x00,0xF2, 0,0,0, 0x00};
+    CHECK_EQ("No2 current be16[6..7]*100", be16(no2[6], no2[7]) * 100, 33000); /* 330=33.0A */
+    CHECK_EQ("No2 period be16[8..9]",      be16(no2[8], no2[9]), 242);
+    CHECK_EQ("No2 brake bit (f4&0x20)",    (no2[4] & 0x20) ? 1 : 0, 1);
+    CHECK_EQ("No2 error byte f3",          no2[3], 0x06);
+
     if (fails) { printf("\n%d CHECK(S) FAILED\n", fails); return 1; }
     printf("\nall decode-math checks passed\n");
     return 0;

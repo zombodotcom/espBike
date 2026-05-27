@@ -46,9 +46,17 @@ the dialect should be revealed by the **first byte of each frame** once you snif
 | `0x41`     | Kunteng / KT-LCD3  | 12 bytes          |
 | `0x46`     | KingMeter 618U     | 8 bytes           |
 | `0x3A`     | KM5S / 901U        | variable, ends `0D 0A` |
+| `0x02`     | No.2 / China S866  | 14 bytes (common on APT/Lishui) |
 
-UART is **9600 baud, 8N1**. If the raw dump is garbage at 9600, recompile at 1200
-(covers the unlikely Bafang case): change `UART_BAUD` in `main/main.c`.
+The firmware decodes all four. UART is **9600 baud, 8N1**. If the raw dump is garbage
+at 9600, first set `UART_INVERT_RX 1` in `main/main.c` (some Lishui/No.2 units invert
+the line), then try `UART_BAUD 1200` (covers the unlikely Bafang case).
+
+There is **no published APT 500S protocol** — nobody has posted a datasheet or hex dump
+of its serial link. The byte format is fixed by the **Lishui controller's firmware**,
+not the APT display brand, so the model number can't tell us which of the above it is.
+The first frame byte settles it in one sniff; all four candidates are mapped from the
+open-source EBiCS / BMSBattery_S decoders.
 
 ### What this tap can and cannot see
 

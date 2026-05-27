@@ -19,7 +19,9 @@
  *     0x41 -> Kunteng / KT-LCD3   (12-byte frame)
  *     0x46 -> KingMeter 618U      (8-byte frame)
  *     0x3A -> KM5S / 901U         (variable, ends 0x0D 0x0A)
- * If the raw dump is garbage at 9600, recompile at UART_BAUD 1200.
+ *     0x02 -> No.2 / China S866   (14-byte frame; common on APT/Lishui)
+ * If the raw dump is garbage at 9600, first try UART_INVERT_RX 1 (some Lishui/No.2
+ * units invert the line), then recompile at UART_BAUD 1200 (unlikely Bafang case).
  *
  * HONEST LIMITS of a display-line tap (single controller-TX wire):
  *   - Battery is reported as a COARSE SOC/bar level + a nominal-voltage byte, never
@@ -86,6 +88,7 @@
 #define UART_RX_PIN      16
 #define UART_TX_PIN      UART_PIN_NO_CHANGE  /* passive sniff, no TX */
 #define UART_BAUD        9600                /* Lishui/KM5S family; try 1200 if garbage */
+#define UART_INVERT_RX   0                   /* set 1 if 9600 yields garbage (some invert) */
 #define UART_BUF_SIZE    1024
 #define FRAME_MAX        64
 #define FRAME_GAP_MS     8    /* idle gap that ends a frame (~7.5 char-times @ 9600) */
@@ -324,6 +327,20 @@ static void decode_km5s(const uint8_t *f, size_t n) {
     push_common(period_ms_to_mph_x100(period), cur_ma, soc, f[8]);
 }
 
+/* 0x02 — "No.2 / China" protocol (S866/SW900 family, common on APT/Lishui).
+ * Ref: EBiCS/EBiCS_Firmware Src/display_No_2.c — controller->display, 14 bytes:
+ *   [3] error  [4] brake (bit5)  [6..7] current 0.1 A units, big-endian
+ *   [8..9] wheel period ms, big-endian  [13] XOR checksum of preceding bytes.
+ * No distinct SOC byte in this layout, so battery bars report 0 (unknown) here. */
+static void decode_no2(const uint8_t *f, size_t n) {
+    if (n < 10) return;
+    uint16_t period = ((uint16_t)f[8] << 8) | f[9];
+    int32_t  cur_ma = (((int32_t)f[6] << 8) | f[7]) * 100;   /* 0.1 A -> mA */
+    uint8_t  brake  = (f[4] & 0x20) ? 1 : 0;
+    s_brake = brake; notify_bytes(h_brk, (void*)&s_brake, 1);
+    push_common(period_ms_to_mph_x100(period), cur_ma, 0, f[3]);
+}
+
 /* Error byte values (forwarded raw on char 0xEB09), per APT 500S datasheet §9:
  *   0x01 normal        0x09 motor phase error    0x13 battery temp sensor err
  *   0x03 brake signal  0x10 controller over-temp 0x14 motor temp sensor err
@@ -346,6 +363,7 @@ static void parse_frame(const uint8_t *f, size_t n) {
     case 0x41: decode_kt(f, n);     break;
     case 0x46: decode_km618u(f, n); break;
     case 0x3A: decode_km5s(f, n);   break;
+    case 0x02: decode_no2(f, n);    break;
     default:   /* unknown dialect — raw already forwarded for bring-up */ break;
     }
 }
@@ -457,7 +475,11 @@ static void uart_init(void) {
     ESP_ERROR_CHECK(uart_param_config(UART_PORT, &cfg));
     ESP_ERROR_CHECK(uart_set_pin(UART_PORT, UART_TX_PIN, UART_RX_PIN,
                                  UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
-    ESP_LOGI(TAG, "UART2 up @ %d baud on GPIO%d", UART_BAUD, UART_RX_PIN);
+#if UART_INVERT_RX
+    ESP_ERROR_CHECK(uart_set_line_inverse(UART_PORT, UART_SIGNAL_RXD_INV));
+#endif
+    ESP_LOGI(TAG, "UART2 up @ %d baud on GPIO%d (invert_rx=%d)",
+             UART_BAUD, UART_RX_PIN, UART_INVERT_RX);
 }
 
 /* ---------- app_main ---------- */
