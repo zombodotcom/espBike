@@ -475,6 +475,10 @@ static void uart_init(void) {
     ESP_ERROR_CHECK(uart_param_config(UART_PORT, &cfg));
     ESP_ERROR_CHECK(uart_set_pin(UART_PORT, UART_TX_PIN, UART_RX_PIN,
                                  UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    /* Idle-high pull-up: a disconnected/floating RX pin otherwise picks up noise
+       that uart_read_bytes returns as junk, spinning uart_task and tripping the
+       task watchdog. UART line idle is high, so this is harmless when connected. */
+    gpio_set_pull_mode(UART_RX_PIN, GPIO_PULLUP_ONLY);
 #if UART_INVERT_RX
     ESP_ERROR_CHECK(uart_set_line_inverse(UART_PORT, UART_SIGNAL_RXD_INV));
 #endif
